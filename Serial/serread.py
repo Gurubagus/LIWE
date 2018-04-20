@@ -16,8 +16,13 @@ sys.path.append('/home/pi/Desktop/O.T.E./GmailUpdater')
 import upload_to_drive
 
 precision = 2 #how many decimal places you want in the readings
-timer = 1 #reading delay
 
+#'time' and 'numberofreadings' mean it collects one reading every minute
+#and averages 60 of them equalling one reading ever hour
+timer = 60 #reading delay
+numberofreadings = 60 #how many total readings to average
+
+#All List for storage of chopped data to be written to data file
 Cell1List = []
 Cell2List = []
 Cell3List = []
@@ -28,7 +33,10 @@ IrrList   = []
 i = 0
 Wattsum = 0
 
-         
+#    voltchop/humchop/irrchop methods take incoming data
+#    from subscripts, timestamps it, and appends it to the 
+#    appropriate Lists 
+
 def voltchop():
     
     vt = VoltTemp.main()
@@ -80,6 +88,7 @@ def irrchop():
 
                 
 def main():
+    #importing all necessary global variables
     global Cell1List
     global Cell2List
     global Cell3List
@@ -89,15 +98,18 @@ def main():
     global IrrList
     global i
     global Wattsum
+    global numberofreadings
     
+    #running the 3 data preparing methods
     voltchop()
     humchop()
     irrchop()
     
     
-    
-    if i >= 10:
+    # if loop counts to "i" then runs 
+    if i >= numberofreadings:
    
+        #creates averages of all readings for designed number of reads
         cell1ave = sum(Cell1List)/len(Cell1List)
         cell1ave = round(cell1ave,precision)
         cell2ave = sum(Cell2List)/len(Cell2List)
@@ -113,11 +125,18 @@ def main():
         irrave = sum(IrrList)/len(IrrList)
         irrave = round(irrave,precision)
         Wattsum+=irrave
+        Wattsum = round(Wattsum,precision)
+        
+        #timestamp
         time = '{:%y-%d-%m %H:%M:%S}'.format(datetime.datetime.now())
+        
+        #Prepares then writes data to file
         c = str([cell1ave,cell2ave,cell3ave,cell4ave,tempave,humave,irrave,Wattsum])
         c = c[1:-1]
         f = open("/home/pi/Desktop/O.T.E./Data/Data.txt", 'a+')
         f.write(time+','+c+"\n")
+        
+        #resets all lists to zero
         Cell1List = []
         Cell2List = []
         Cell3List = []
@@ -126,6 +145,8 @@ def main():
         HumList   = []
         IrrList   = []
         i = 0
+        
+        #script for uploading data file to gdrive
         upload_to_drive.main()
         
     else:
